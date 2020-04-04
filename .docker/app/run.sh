@@ -2,7 +2,4 @@
 
 cd /var/www
 
-./.docker/app/prepare_env.sh
-
-php artisan migrate
-php-fpm
+./.docker/app/wait-for-it.sh -q app_db:3306 -- php artisan migrate && php-fpm

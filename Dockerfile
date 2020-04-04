@@ -8,11 +8,7 @@ RUN rm -rf /var/www/html
 
 COPY . .
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-RUN composer install && \
-    php artisan key:generate && \
-    php artisan config:cache
+RUN ./.docker/app/prepare-env.sh
 
 RUN ln -s public html
 

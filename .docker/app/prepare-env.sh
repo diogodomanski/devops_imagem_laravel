@@ -6,6 +6,7 @@ cd /var/www
 if [ ! -f ".env" ]; then
     # Create .env file based on .env.example
     cp .env.example .env
+    chown 1000:1000 .env
 
     # SET DB_HOST value
     sed -i -E 's/^(DB_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_db/' .env
@@ -16,3 +17,13 @@ if [ ! -f ".env" ]; then
     # SET REDIS_HOST value
     sed -i -E 's/^(REDIS_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_redis/' .env
 fi
+
+# Install composer
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install project dependencies
+composer install
+
+## Run start scripts for laravel
+php artisan key:generate
+php artisan config:cache
