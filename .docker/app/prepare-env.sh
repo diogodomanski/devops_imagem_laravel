@@ -8,13 +8,13 @@ if [ ! -f ".env" ]; then
     cp .env.example .env
     chown 1000:1000 .env
 
-    # SET DB_HOST value
+   # SET DB_HOST value to app_db
     sed -i -E 's/^(DB_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_db/' .env
 
-    # SET DB_PASSWORD value
+    # SET DB_PASSWORD value to root
     sed -i -E 's/^(DB_PASSWORD[[:blank:]]*=[[:blank:]]*).*/\1root/' .env
 
-    # SET REDIS_HOST value
+    # SET REDIS_HOST value to app_redis
     sed -i -E 's/^(REDIS_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_redis/' .env
 fi
 

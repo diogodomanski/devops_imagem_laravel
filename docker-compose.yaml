@@ -5,12 +5,14 @@ services:
     app:
         build: .
         container_name: app
+        # entrypoint: dockerize -wait tcp://app_db:3306 -timeout 40s ./.docker/app/entrypoint.sh
         volumes:
             - .:/var/www
         networks:
             - app-network
         depends_on:
             - db
+            - redis
 
     nginx:
         build: .docker/nginx
@@ -18,37 +20,39 @@ services:
         restart: always
         tty: true
         ports:
-            - "8000:80"
+          - "8000:80"
         volumes:
-            - .:/var/www
+          - .:/var/www
         networks:
-            - app-network
+          - app-network
+        depends_on:
+          - app
 
     db:
         image: mysql
         container_name: app_db
-        command: --default-authentication-plugin=mysql_native_password
+        command: --default-authentication-plugin=mysql_native_password --innodb-use-native-aio=0
         restart: always
         tty: true
         ports:
-            - "33006:3306"
+          - "33006:3306"
         volumes:
-            - ./.docker/dbdata:/var/lib/mysql
+          - ./.docker/dbdata:/var/lib/mysql
         environment:
-            - MYSQL_DATABASE=laravel
-            - MYSQL_ROOT_PASSWORD=root
-            - MYSQL_USER=root
+          - MYSQL_DATABASE=laravel
+          - MYSQL_ROOT_PASSWORD=root
+          - MYSQL_USER=root
         networks:
-            - app-network
+          - app-network
 
     redis:
         image: redis:alpine
         container_name: app_redis
         expose:
-            - 6379
+          - 6379
         networks:
-            - app-network
+          - app-network
 
 networks:
     app-network:
-        driver: bridge
+      driver: bridge
