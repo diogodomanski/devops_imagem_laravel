@@ -41,45 +41,24 @@ $ composer create-project --prefer-dist laravel/laravel <nome_do_projeto>
 $ cd <nome_do_projeto>
 ```
 
-Criar o script `.docker/app/prepare-env.sh` para preparar o ambiente do laravel
+Copiar o arquivo `.env.example` para `.docker/app/.env` e colocar as marcações de dados dinâmicos (que serão substituídos pelo dockerize)
 
 ```
-#!/bin/bash
+DB_CONNECTION=mysql
+DB_HOST={{ .Env.DB_HOST }}
+DB_PORT={{ .Env.DB_PORT }}
+DB_DATABASE={{ .Env.DB_DATABASE }}
+DB_USERNAME={{ .Env.DB_USERNAME }}
+DB_PASSWORD={{ .Env.DB_PASSWORD }}
 
-cd /var/www
-
-# Check if .env file does not exit
-if [ ! -f ".env" ]; then
-    # Create .env file based on .env.example
-    cp .env.example .env
-    chown 1000:1000 .env
-
-    # SET DB_HOST value to app_db
-    sed -i -E 's/^(DB_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_db/' .env
-
-    # SET DB_PASSWORD value to root
-    sed -i -E 's/^(DB_PASSWORD[[:blank:]]*=[[:blank:]]*).*/\1root/' .env
-
-    # SET REDIS_HOST value to app_redis
-    sed -i -E 's/^(REDIS_HOST[[:blank:]]*=[[:blank:]]*).*/\1app_redis/' .env
-fi
-
-# Install composer
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Install project dependencies
-composer install
-
-## Run start scripts for laravel
-php artisan key:generate
-php artisan config:cache
+REDIS_HOST={{ .Env.REDIS_HOST }}
+REDIS_PASSWORD=null
+REDIS_PORT=6379
 ```
 
-Adicionar permissão de execução ao arquivo `.docker/app/prepare-env.sh`
+> O padrão é `{{ .Env.<nome_da_variável> }}`. As declarações das variáveis de ambiente ficarão no arquivo `docker-compose.yaml`, na sessão `environment` do serviço.
 
-```
-$ chmod +x .docer/app/prepare-env.sh
-```
+> Essa técnica pode ser usada para qualquer arquivo (inclusive nas configurações do Nginx, por exemplo).
 
 Criar o script para entrypoint do `app` em `.docker/app/entrypoint.sh`
 
@@ -87,12 +66,26 @@ Criar o script para entrypoint do `app` em `.docker/app/entrypoint.sh`
 #!/bin/bash
 
 # Wait until DB is up and running
-dockerize -wait tcp://app_db:3306 -timeout 40s
+dockerize -template ./.docker/app/.env:.env -wait tcp://app_db:3306 -timeout 40s
 
 cd /var/www
 
+# Install project dependencies
+composer install
+
+## Run start scripts for laravel
+php artisan key:generate
+php artisan config:cache
 php artisan migrate
+
+# Start php-fpm
 php-fpm
+```
+
+Adicionar permissão de execução ao arquivo `.docker/app/entrypoint.sh`
+
+```
+$ chmod +x .docer/app/entrypoint.sh
 ```
 
 Criar arquivo `Dockerfile` na raiz do projeto e colocar o seguinte conteúdo
@@ -108,18 +101,21 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
 WORKDIR /var/www
 RUN rm -rf /var/www/html
 
-COPY . .
+# COPY . .
 
-RUN ./.docker/app/prepare-env.sh
 
 RUN ln -s public html
 
 EXPOSE 9000
 
 ENTRYPOINT ["./.docker/app/entrypoint.sh"]
+
 ```
 
 ### Passo 2: Criando container Nginx
@@ -171,6 +167,13 @@ services:
         build: .
         container_name: app
         # entrypoint: dockerize -wait tcp://app_db:3306 -timeout 40s ./.docker/app/entrypoint.sh
+        environment:
+          - DB_HOST=app_db
+          - DB_PORT=3306
+          - DB_DATABASE=laravel
+          - DB_USERNAME=root
+          - DB_PASSWORD=root
+          - REDIS_HOST=app_redis
         volumes:
             - .:/var/www
         networks:
