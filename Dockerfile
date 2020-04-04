@@ -21,4 +21,4 @@ RUN ln -s public html
 
 EXPOSE 9000
 
-ENTRYPOINT ["./.docker/app/entrypoint.sh"]
+ENTRYPOINT ["php-fpm"]
