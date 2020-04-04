@@ -5,7 +5,7 @@ services:
     app:
         build: .
         container_name: app
-        # entrypoint: dockerize -wait tcp://app_db:3306 -timeout 40s ./.docker/app/entrypoint.sh
+        entrypoint: dockerize -template ./.docker/app/.env:.env -wait tcp://app_db:3306 -timeout 40s ./.docker/app/entrypoint.sh
         environment:
           - DB_HOST=app_db
           - DB_PORT=3306

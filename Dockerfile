@@ -1,6 +1,6 @@
 FROM php:7.4-fpm-alpine
 
-RUN apk add --no-cache openssl bash mysql-client
+RUN apk add --no-cache openssl bash mysql-client nodejs npm
 RUN docker-php-ext-install pdo pdo_mysql
 
 ENV DOCKERIZE_VERSION v0.6.1
