@@ -1,4 +1,4 @@
-FROM nginx:1.17-alpine
+FROM nginx:1.17-alpine as builder
 
 ENV DOCKERIZE_VERSION v0.6.1
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
@@ -7,3 +7,9 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 
 RUN rm /etc/nginx/conf.d/default.conf
 COPY ./nginx.conf /etc/nginx/conf.d
+
+
+FROM nginx:1.17-alpine
+
+RUN rm /etc/nginx/conf.d/default.conf
+COPY --from=builder /etc/nginx/conf.d/nginx.conf /etc/nginx/conf.d
